@@ -64,6 +64,17 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
+app.get('/', (_request, response) => {
+  response.status(200).json({
+    status: 'ok',
+    message: 'KL backend is running.',
+    endpoints: {
+      health: '/api/health',
+      contact: 'POST /api/contact',
+    },
+  })
+})
+
 app.get('/api/health', (_request, response) => {
   response.json({ status: 'ok' })
 })
@@ -122,6 +133,28 @@ app.post('/api/contact', async (request, response) => {
     console.error('Failed to send contact email.', error)
     response.status(500).json({ message: 'We could not send your message right now. Please try again later.' })
   }
+})
+
+app.all('/api/contact', (_request, response) => {
+  response.status(405).json({ message: 'Method not allowed. Use POST /api/contact.' })
+})
+
+app.use('/api', (_request, response) => {
+  response.status(404).json({ message: 'API route not found.' })
+})
+
+app.use((error, _request, response, _next) => {
+  if (error?.message === 'Origin not allowed by CORS') {
+    response.status(403).json({ message: error.message })
+    return
+  }
+
+  console.error('Unhandled backend error.', error)
+  response.status(500).json({ message: 'Internal server error.' })
+})
+
+app.use((_request, response) => {
+  response.status(404).json({ message: 'Route not found.' })
 })
 
 export default app
